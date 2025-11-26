@@ -1,0 +1,79 @@
+---
+title: "Pemstok"
+output: html_document
+date: "2025-11-25"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+install.packages("dplyr")
+install.packages("tidyr")
+install.packages(c("ggraph","igraph","tidyverse"))
+```
+
+# Import CSV
+```{r}
+df <- read_csv("/cloud/project/Dataset - CSV.csv")
+```
+
+```{r}
+total <- df$Total
+
+changeState <- function(n){
+  state <- ifelse(n <= 10, "State 1", 
+         ifelse(n <= 20, "State 2", 
+         ifelse(n <= 30, "State 3", 
+         ifelse(n <= 40, "State 4", 
+         ifelse(n <= 50, "State 5", 
+         ifelse(n <= 60, "State 6", "Invalid"))))))
+  return (state)
+}
+
+statelist <- c()
+for (x in 1:length(total)) {
+res <- changeState(total[x])
+statelist[x] <- res
+} 
+
+df$State <- statelist
+```
+
+```{r}
+df
+```
+```{r}
+states <- df$State
+numeric_states <- as.numeric(gsub("State ", "", states))
+transitions <- data.frame(
+  from = numeric_states[-length(numeric_states)],
+  to   = numeric_states[-1]
+)
+transition_counts <- transitions %>%
+  count(from, to)
+unique_states <- sort(unique(numeric_states))
+
+full_matrix <- expand.grid(
+  from = unique_states,
+  to   = unique_states
+)
+full_matrix <- full_matrix %>%
+  left_join(transition_counts, by = c("from", "to")) %>%
+  mutate(n = ifelse(is.na(n), 0, n))
+transition_matrix <- full_matrix %>%
+  group_by(from) %>%
+  mutate(prob = n / sum(n)) %>%
+  ungroup()
+library(tidyr)
+
+transition_table <- transition_matrix %>%
+  select(from, to, prob) %>%
+  pivot_wider(names_from = to, values_from = prob)
+transition_table$from <- paste("State", transition_table$from)
+colnames(transition_table) <- c("From",
+                                paste("State", unique_states))
+
+transition_table
+```
