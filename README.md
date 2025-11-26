@@ -1,4 +1,4 @@
-# Markov Chain
+# Markov Chain Kelompok 13 RA
 
 Rantai Markov meliputi:
 1. Identifikasi Ruang Keadaan 
